@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Monitoring & Anomaly Detection</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a237e;
+            --secondary-color: #283593;
+            --accent-color: #5c6bc0;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --danger-color: #f44336;
+            --light-color: #f5f5f5;
+            --dark-color: #121212;
+            --card-bg: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --text-color: #333;
+            --border-color: #e0e0e0;
+        }
+        
+        .dark-mode {
+            --primary-color: #7986cb;
+            --secondary-color: #5c6bc0;
+            --accent-color: #9fa8da;
+            --light-color: #121212;
+            --dark-color: #f5f5f5;
+            --card-bg: #1e1e1e;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --text-color: #e0e0e0;
+            --border-color: #333;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--light-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 20px;
+        }
+        
+        /* Header Styles */
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            backdrop-filter: blur(5px);
+        }
+        
+        .logo-text h1 {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+        
+        .logo-text p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        /* Theme Toggle */
+        .theme-toggle {
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-checkbox {
+            display: none;
+        }
+        
+        .toggle-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .toggle-label::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .toggle-checkbox:checked + .toggle-label::after {
+            transform: translateX(30px);
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px var(--shadow);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+        
+        .stat-info h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .trend-up { color: var(--success-color); }
+        .trend-down { color: var(--danger-color); }
+        
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 2rem;
+        }
+        
+        @media (max-width: 1100px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+        }
+        
+        .chart-container:hover {
+            box-shadow: 0 8px 30px var(--shadow);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .chart-header h2 {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+        
+        /* Alerts Panel */
+        .alerts-panel {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px var(--shadow);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .alert-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            gap: 15px;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        
+        .alert-item:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        
+        .dark-mode .alert-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .alert-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .alert-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .alert-details h4 {
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+        
+        .alert-details p {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Simulation Controls */
+        .simulation-panel {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px var(--shadow);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 1.5rem;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn i {
+            font-size: 1.1rem;
+        }
+        
+        /* Real-time indicator */
+        .real-time-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .logo {
+                min-width: auto;
+                justify-content: center;
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-wrapper {
+                height: 250px;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .chart-container {
+                padding: 1rem;
+            }
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--light-color);
+            border-radius: 4px;
+        }
+        
+        .dark-mode ::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            border-top: 1px solid var(--border-color);
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .highlight {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .toast {
+            background: var(--card-bg);
+            border-left: 4px solid;
+            padding: 1rem;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+            min-width: 300px;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            background-color: var(--dark-color);
+            color: var(--light-color);
+            text-align: center;
+            padding: 5px 10px;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Toast Container -->
+        <div class="toast-container" id="toastContainer"></div>
+        
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>System Monitoring & Anomaly Detection</h1>
+                        <p>Python & SQL powered system log analysis with automated alerting</p>
+                    </div>
+                </div>
+                
+                <div class="header-controls">
+                    <div class="real-time-indicator">
+                        <i class="fas fa-circle" style="color: var(--success-color); font-size: 0.8rem;"></i>
+                        <span>LIVE</span>
+                    </div>
+                    
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="toggle-checkbox">
+                        <label for="themeToggle" class="toggle-label">
+                            <i class="fas fa-sun" style="position: absolute; left: 8px; top: 7px; font-size: 0.8rem;"></i>
+                            <i class="fas fa-moon" style="position: absolute; right: 8px; top: 7px; font-size: 0.8rem;"></i>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(26, 35, 126, 0.1); color: var(--primary-color);">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="healthScore">98.7%</h3>
+                    <p>System Health Score</p>
+                    <div class="stat-trend trend-up">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>2.3% this week</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(244, 67, 54, 0.1); color: var(--danger-color);">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="activeAlerts">12</h3>
+                    <p>Active Anomalies</p>
+                    <div class="stat-trend trend-down">
+                        <i class="fas fa-arrow-down"></i>
+                        <span>15% reduction</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(76, 175, 80, 0.1); color: var(--success-color);">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="responseTime">2.3s</h3>
+                    <p>Avg. Response Time</p>
+                    <div class="stat-trend trend-up">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>68% faster</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(255, 152, 0, 0.1); color: var(--warning-color);">
+                    <i class="fas fa-database"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="logCount">42.5K</h3>
+                    <p>Logs Analyzed</p>
+                    <div class="stat-trend trend-up">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>1.2K/min</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dashboard Charts -->
+        <div class="dashboard-grid">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h2><i class="fas fa-chart-line"></i> System Performance KPIs</h2>
+                    <div class="tooltip">
+                        <i class="fas fa-info-circle" style="color: var(--accent-color);"></i>
+                        <span class="tooltip-text">Real-time performance metrics from Python monitoring script</span>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h2><i class="fas fa-exclamation-circle"></i> Incident Trends</h2>
+                    <div class="tooltip">
+                        <i class="fas fa-info-circle" style="color: var(--accent-color);"></i>
+                        <span class="tooltip-text">Weekly incident analysis from SQL database</span>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="incidentChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alerts Panel -->
+        <div class="alerts-panel">
+            <div class="chart-header">
+                <h2><i class="fas fa-bell"></i> Recent Anomaly Alerts</h2>
+                <span class="highlight" id="alertCount">5 alerts</span>
+            </div>
+            <div id="alertsList">
+                <!-- Alerts will be populated dynamically -->
+            </div>
+        </div>
+        
+        <!-- Simulation Controls -->
+        <div class="simulation-panel">
+            <div class="chart-header">
+                <h2><i class="fas fa-play-circle"></i> Anomaly Detection Simulation</h2>
+                <span class="real-time-indicator">
+                    <i class="fas fa-circle" style="color: var(--success-color); font-size: 0.8rem;"></i>
+                    <span>Simulation Ready</span>
+                </span>
+            </div>
+            <p>This simulation demonstrates how the Python and SQL-powered system analyzes log data to detect performance irregularities and trigger automated alerts.</p>
+            
+            <div class="controls-grid">
+                <button class="btn" style="background: var(--primary-color); color: white;" id="simulateAnomaly">
+                    <i class="fas fa-bug"></i>
+                    <span>Simulate Anomaly</span>
+                </button>
+                
+                <button class="btn" style="background: var(--success-color); color: white;" id="runDetection">
+                    <i class="fas fa-search"></i>
+                    <span>Run Detection</span>
+                </button>
+                
+                <button class="btn" style="background: var(--warning-color); color: white;" id="analyzeLogs">
+                    <i class="fas fa-database"></i>
+                    <span>Analyze Logs</span>
+                </button>
+                
+                <button class="btn" style="background: var(--danger-color); color: white;" id="clearAlerts">
+                    <i class="fas fa-trash"></i>
+                    <span>Clear Alerts</span>
+                </button>
+                
+                <button class="btn" style="background: var(--accent-color); color: white;" id="autoSimulate">
+                    <i class="fas fa-robot"></i>
+                    <span>Auto Simulate</span>
+                </button>
+            </div>
+            
+            <div id="simulationStatus" style="margin-top: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.05); border-radius: 8px; display: none;">
+                <!-- Simulation status will appear here -->
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer>
+            <p>System Monitoring & Anomaly Detection Project | Created with Python, SQL, and Interactive Dashboards</p>
+            <p>Simulated response time for identified issues reduced through automated alerting logic</p>
+            <p style="margin-top: 15px;">
+                <i class="fas fa-code"></i> 
+                Fully reactive dashboard ready for GitHub Pages deployment
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Global variables
+        let autoSimulationInterval = null;
+        let isAutoSimulating = false;
+        let alertCount = 5;
+        
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            initializeAlerts();
+            setupEventListeners();
+            setupRealTimeUpdates();
+            setupThemeToggle();
+            
+            // Show welcome toast
+            showToast('System Monitoring Dashboard initialized', 'info');
+        });
+        
+        // Initialize charts
+        function initializeCharts() {
+            // Performance Chart
+            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+            window.performanceChart = new Chart(performanceCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:59'],
+                    datasets: [
+                        {
+                            label: 'CPU Usage',
+                            data: [24, 28, 45, 60, 52, 38, 30],
+                            borderColor: '#5c6bc0',
+                            backgroundColor: 'rgba(92, 107, 192, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Memory Usage',
+                            data: [45, 48, 52, 68, 64, 55, 50],
+                            borderColor: '#4caf50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Response Time',
+                            data: [120, 115, 130, 280, 210, 150, 125],
+                            borderColor: '#ff9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Usage (%)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            max: 300,
+                            title: {
+                                display: true,
+                                text: 'Response Time (ms)'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            padding: 12,
+                            cornerRadius: 6
+                        }
+                    }
+                }
+            });
+            
+            // Incident Chart
+            const incidentCtx = document.getElementById('incidentChart').getContext('2d');
+            window.incidentChart = new Chart(incidentCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        {
+                            label: 'Critical',
+                            data: [2, 3, 1, 4, 2, 1, 0],
+                            backgroundColor: '#f44336',
+                            borderColor: '#d32f2f',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Warning',
+                            data: [5, 7, 4, 8, 6, 3, 2],
+                            backgroundColor: '#ff9800',
+                            borderColor: '#f57c00',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Resolved',
+                            data: [6, 8, 4, 10, 7, 3, 2],
+                            backgroundColor: '#4caf50',
+                            borderColor: '#388e3c',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Incidents'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize alerts
+        function initializeAlerts() {
+            const alerts = [
+                { id: 1, type: 'critical', title: 'CPU Spike Detected', description: 'CPU usage exceeded 85% for 5+ minutes', time: '10:24 AM', service: 'Compute Engine' },
+                { id: 2, type: 'warning', title: 'Memory Leak Possible', description: 'Gradual memory increase detected in service A', time: '09:15 AM', service: 'Service A' },
+                { id: 3, type: 'info', title: 'Database Response Slow', description: 'Query response time increased by 200%', time: '08:42 AM', service: 'Database' },
+                { id: 4, type: 'critical', title: 'Network Latency Detected', description: 'Packet loss detected in east-west traffic', time: '07:30 AM', service: 'Network' },
+                { id: 5, type: 'warning', title: 'Disk I/O Saturation', description: 'Disk queue length exceeding thresholds', time: '06:18 AM', service: 'Storage' }
+            ];
+            
+            updateAlertsList(alerts);
+        }
+        
+        // Update alerts list
+        function updateAlertsList(alerts) {
+            const alertsList = document.getElementById('alertsList');
+            alertsList.innerHTML = '';
+            
+            alerts.forEach(alert => {
+                const alertItem = document.createElement('div');
+                alertItem.className = 'alert-item';
+                alertItem.dataset.id = alert.id;
+                
+                let iconClass = 'fas fa-info-circle';
+                let alertClass = 'alert-info';
+                if (alert.type === 'critical') {
+                    iconClass = 'fas fa-exclamation-circle';
+                    alertClass = 'alert-critical';
+                }
+                if (alert.type === 'warning') {
+                    iconClass = 'fas fa-exclamation-triangle';
+                    alertClass = 'alert-warning';
+                }
+                
+                alertItem.innerHTML = `
+                    <div class="alert-icon ${alertClass}" style="background: ${getAlertColor(alert.type, 'bg')}; color: ${getAlertColor(alert.type, 'text')};">
+                        <i class="${iconClass}"></i>
+                    </div>
+                    <div class="alert-details">
+                        <h4>${alert.title}</h4>
+                        <p>${alert.description}</p>
+                        <small style="color: var(--accent-color);">${alert.service}</small>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-color); opacity: 0.7; white-space: nowrap;">
+                        ${alert.time}
+                    </div>
+                `;
+                
+                alertItem.addEventListener('click', () => {
+                    showToast(`Alert details: ${alert.title}`, alert.type);
+                });
+                
+                alertsList.appendChild(alertItem);
+            });
+            
+            // Update alert count
+            document.getElementById('alertCount').textContent = `${alerts.length} alert${alerts.length !== 1 ? 's' : ''}`;
+            document.getElementById('activeAlerts').textContent = alerts.length;
+        }
+        
+        // Get alert colors
+        function getAlertColor(type, variant) {
+            const colors = {
+                critical: { bg: 'rgba(244, 67, 54, 0.1)', text: '#f44336' },
+                warning: { bg: 'rgba(255, 152, 0, 0.1)', text: '#ff9800' },
+                info: { bg: 'rgba(92, 107, 192, 0.1)', text: '#5c6bc0' }
+            };
+            return colors[type][variant];
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Simulation buttons
+            document.getElementById('simulateAnomaly').addEventListener('click', simulateAnomaly);
+            document.getElementById('runDetection').addEventListener('click', runDetection);
+            document.getElementById('analyzeLogs').addEventListener('click', analyzeLogs);
+            document.getElementById('clearAlerts').addEventListener('click', clearAlerts);
+            document.getElementById('autoSimulate').addEventListener('click', toggleAutoSimulate);
+            
+            // Stat cards click events
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const stat = this.querySelector('h3').textContent;
+                    showToast(`Detailed view for: ${stat}`, 'info');
+                });
+            });
+        }
+        
+        // Setup real-time updates
+        function setupRealTimeUpdates() {
+            // Update health score randomly
+            setInterval(() => {
+                const healthScore = document.getElementById('healthScore');
+                const currentScore = parseFloat(healthScore.textContent);
+                const change = (Math.random() - 0.5) * 0.2;
+                const newScore = Math.min(99.9, Math.max(95.0, currentScore + change));
+                healthScore.textContent = newScore.toFixed(1) + '%';
+                
+                // Update log count
+                const logCount = document.getElementById('logCount');
+                const currentLogs = parseInt(logCount.textContent.replace('K', '')) * 1000;
+                const newLogs = currentLogs + Math.floor(Math.random() * 100);
+                logCount.textContent = (newLogs / 1000).toFixed(1) + 'K';
+                
+                // Update response time
+                const responseTime = document.getElementById('responseTime');
+                const currentTime = parseFloat(responseTime.textContent);
+                const timeChange = (Math.random() - 0.5) * 0.1;
+                const newTime = Math.min(3.0, Math.max(1.8, currentTime + timeChange));
+                responseTime.textContent = newTime.toFixed(1) + 's';
+            }, 3000);
+            
+            // Update charts with subtle changes
+            setInterval(() => {
+                if (window.performanceChart) {
+                    const datasets = window.performanceChart.data.datasets;
+                    datasets.forEach(dataset => {
+                        const lastValue = dataset.data[dataset.data.length - 1];
+                        const change = (Math.random() - 0.5) * 5;
+                        dataset.data[dataset.data.length - 1] = Math.max(0, lastValue + change);
+                    });
+                    window.performanceChart.update('none');
+                }
+            }, 5000);
+        }
+        
+        // Setup theme toggle
+        function setupThemeToggle() {
+            const themeToggle = document.getElementById('themeToggle');
+            const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+            
+            // Set initial theme based on system preference
+            if (prefersDarkScheme.matches) {
+                document.body.classList.add('dark-mode');
+                themeToggle.checked = true;
+            }
+            
+            // Toggle theme
+            themeToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    document.body.classList.add('dark-mode');
+                    showToast('Dark mode enabled', 'info');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    showToast('Light mode enabled', 'info');
+                }
+                
+                // Update chart colors for theme
+                updateChartColors();
+            });
+        }
+        
+        // Update chart colors for theme
+        function updateChartColors() {
+            const isDark = document.body.classList.contains('dark-mode');
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+            
+            if (window.performanceChart) {
+                window.performanceChart.options.scales.x.grid.color = gridColor;
+                window.performanceChart.options.scales.y.grid.color = gridColor;
+                window.performanceChart.update();
+            }
+            
+            if (window.incidentChart) {
+                window.incidentChart.options.scales.x.grid.color = gridColor;
+                window.incidentChart.options.scales.y.grid.color = gridColor;
+                window.incidentChart.update();
+            }
+        }
+        
+        // Simulation functions
+        function simulateAnomaly() {
+            showSimulationStatus('Simulating system anomaly...', 'warning');
+            
+            // Create new alert
+            const alerts = [
+                {
+                    id: Date.now(),
+                    type: Math.random() > 0.7 ? 'critical' : 'warning',
+                    title: 'Simulated Anomaly Detected',
+                    description: 'Python script identified irregular pattern in system logs',
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    service: 'Simulation Engine'
+                }
+            ];
+            
+            // Add to existing alerts
+            const alertItems = document.querySelectorAll('.alert-item');
+            alerts[0].id = alertItems.length + 1;
+            
+            // Update performance chart with anomaly
+            if (window.performanceChart) {
+                const datasets = window.performanceChart.data.datasets;
+                const newCpuValue = Math.floor(Math.random() * 30) + 70;
+                datasets[0].data[6] = newCpuValue;
+                
+                const newMemoryValue = Math.floor(Math.random() * 20) + 70;
+                datasets[1].data[6] = newMemoryValue;
+                
+                const newResponseValue = Math.floor(Math.random() * 200) + 200;
+                datasets[2].data[6] = newResponseValue;
+                
+                window.performanceChart.update();
+            }
+            
+            // Update alerts
+            setTimeout(() => {
+                // Get current alerts
+                const currentAlerts = Array.from(document.querySelectorAll('.alert-item')).map(item => ({
+                    id: parseInt(item.dataset.id),
+                    type: item.querySelector('.alert-icon').classList.contains('alert-critical') ? 'critical' : 
+                          item.querySelector('.alert-icon').classList.contains('alert-warning') ? 'warning' : 'info',
+                    title: item.querySelector('h4').textContent,
+                    description: item.querySelector('p').textContent,
+                    time: item.querySelector('small + div').textContent.trim(),
+                    service: item.querySelector('small').textContent
+                }));
+                
+                currentAlerts.unshift(alerts[0]);
+                updateAlertsList(currentAlerts);
+                
+                showSimulationStatus('Anomaly simulation complete! Python detection algorithm triggered.', 'success');
+                showToast('System anomaly simulated successfully', 'warning');
+            }, 1000);
+        }
+        
+        function runDetection() {
+            showSimulationStatus('Running anomaly detection algorithm...', 'info');
+            
+            const detectionTime = (Math.random() * 800 + 200).toFixed(0);
+            const anomaliesFound = Math.floor(Math.random() * 3) + 1;
+            
+            setTimeout(() => {
+                // Add detection result as alert
+                const currentAlerts = Array.from(document.querySelectorAll('.alert-item')).map(item => ({
+                    id: parseInt(item.dataset.id),
+                    type: item.querySelector('.alert-icon').classList.contains('alert-critical') ? 'critical' : 
+                          item.querySelector('.alert-icon').classList.contains('alert-warning') ? 'warning' : 'info',
+                    title: item.querySelector('h4').textContent,
+                    description: item.querySelector('p').textContent,
+                    time: item.querySelector('small + div').textContent.trim(),
+                    service: item.querySelector('small').textContent
+                }));
+                
+                currentAlerts.unshift({
+                    id: currentAlerts.length + 1,
+                    type: 'info',
+                    title: 'Detection Cycle Completed',
+                    description: `Python script analyzed 12,450 log entries in ${detectionTime}ms`,
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    service: 'Detection Engine'
+                });
+                
+                updateAlertsList(currentAlerts);
+                
+                showSimulationStatus(`Detection completed in ${detectionTime}ms. Found ${anomaliesFound} anomalies. SQL queries: 42`, 'success');
+                showToast('Anomaly detection completed successfully', 'info');
+                
+                // Update response time stat
+                const responseTime = document.getElementById('responseTime');
+                const currentTime = parseFloat(responseTime.textContent);
+                responseTime.textContent = (currentTime * 0.95).toFixed(1) + 's';
+            }, 1500);
+        }
+        
+        function analyzeLogs() {
+            showSimulationStatus('Analyzing system logs with SQL queries...', 'info');
+            
+            const logEntries = Math.floor(Math.random() * 5000) + 10000;
+            const issuesFound = Math.floor(Math.random() * 5) + 1;
+            
+            setTimeout(() => {
+                // Update incident chart
+                if (window.incidentChart) {
+                    const datasets = window.incidentChart.data.datasets;
+                    datasets[2].data[6] += issuesFound;
+                    window.incidentChart.update();
+                }
+                
+                showSimulationStatus(`Analyzed ${logEntries.toLocaleString()} logs. Found ${issuesFound} issues. Response time reduced by 68%`, 'success');
+                showToast('Log analysis completed successfully', 'success');
+                
+                // Update health score
+                const healthScore = document.getElementById('healthScore');
+                const currentScore = parseFloat(healthScore.textContent);
+                healthScore.textContent = (currentScore + 0.3).toFixed(1) + '%';
+            }, 2000);
+        }
+        
+        function clearAlerts() {
+            showSimulationStatus('Clearing non-critical alerts...', 'info');
+            
+            setTimeout(() => {
+                // Keep only critical alerts
+                const currentAlerts = Array.from(document.querySelectorAll('.alert-item'))
+                    .map(item => ({
+                        id: parseInt(item.dataset.id),
+                        type: item.querySelector('.alert-icon').classList.contains('alert-critical') ? 'critical' : 
+                              item.querySelector('.alert-icon').classList.contains('alert-warning') ? 'warning' : 'info',
+                        title: item.querySelector('h4').textContent,
+                        description: item.querySelector('p').textContent,
+                        time: item.querySelector('small + div').textContent.trim(),
+                        service: item.querySelector('small').textContent
+                    }))
+                    .filter(alert => alert.type === 'critical')
+                    .slice(0, 2);
+                
+                updateAlertsList(currentAlerts);
+                
+                showSimulationStatus('Alerts cleared. System monitoring continues...', 'success');
+                showToast('Non-critical alerts cleared successfully', 'info');
+            }, 1000);
+        }
+        
+        function toggleAutoSimulate() {
+            const button = document.getElementById('autoSimulate');
+            
+            if (isAutoSimulating) {
+                clearInterval(autoSimulationInterval);
+                isAutoSimulating = false;
+                button.innerHTML = '<i class="fas fa-robot"></i><span>Auto Simulate</span>';
+                button.style.background = 'var(--accent-color)';
+                showToast('Auto simulation stopped', 'info');
+            } else {
+                isAutoSimulating = true;
+                button.innerHTML = '<i class="fas fa-stop-circle"></i><span>Stop Auto</span>';
+                button.style.background = 'var(--danger-color)';
+                
+                // Run simulations randomly
+                autoSimulationInterval = setInterval(() => {
+                    const actions = [simulateAnomaly, runDetection, analyzeLogs];
+                    const randomAction = actions[Math.floor(Math.random() * actions.length)];
+                    randomAction();
+                }, 5000);
+                
+                showToast('Auto simulation started', 'success');
+            }
+        }
+        
+        // Show simulation status
+        function showSimulationStatus(message, type) {
+            const statusDiv = document.getElementById('simulationStatus');
+            const colors = {
+                info: 'var(--accent-color)',
+                warning: 'var(--warning-color)',
+                success: 'var(--success-color)',
+                error: 'var(--danger-color)'
+            };
+            
+            statusDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="spinner" style="width: 20px; height: 20px; border-width: 2px; border-top-color: ${colors[type]};"></div>
+                    <span>${message}</span>
+                </div>
+            `;
+            statusDiv.style.display = 'block';
+            statusDiv.style.borderLeftColor = colors[type];
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Show toast notification
+        function showToast(message, type) {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            
+            const icons = {
+                info: 'fas fa-info-circle',
+                success: 'fas fa-check-circle',
+                warning: 'fas fa-exclamation-triangle',
+                error: 'fas fa-times-circle'
+            };
+            
+            const colors = {
+                info: 'var(--accent-color)',
+                success: 'var(--success-color)',
+                warning: 'var(--warning-color)',
+                error: 'var(--danger-color)'
+            };
+            
+            toast.innerHTML = `
+                <i class="${icons[type]}" style="color: ${colors[type]}; font-size: 1.2rem;"></i>
+                <div>
+                    <strong>${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                    <p style="margin-top: 5px; font-size: 0.9rem;">${message}</p>
+                </div>
+            `;
+            
+            toast.style.borderLeftColor = colors[type];
+            toastContainer.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Remove toast after 5 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toastContainer.removeChild(toast);
+                }, 300);
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
